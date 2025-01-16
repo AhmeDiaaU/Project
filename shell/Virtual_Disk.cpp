@@ -4,77 +4,82 @@ using namespace std;
 // Initialize the static file stream object for the virtual disk
 fstream Virtual_Disk::Disk;
 
+// Constants
+const int CLUSTER_SIZE = 1024; // Define cluster size as a constant for clarity
+
 // Functions
+
+// Create or open the virtual disk file
 void Virtual_Disk::createOrOpenDisk(const string& path) {
+    // Attempt to open the file in read/write binary mode
     Disk.open(path, ios::in | ios::out | ios::binary);
 
+    // If the file doesn't exist, create it
     if (!Disk.is_open()) {
         Disk.open(path, ios::in | ios::out | ios::binary | ios::trunc);
+    }
 
-        
+    // Ensure the file is open
+    if (!Disk.is_open()) {
+        throw runtime_error("Failed to create or open the virtual disk file.");
     }
 }
 
+// Write a cluster of data to the virtual disk
+void Virtual_Disk::writeCluster(const vector<char>& cluster, int clusterIndex) {
+    // Validate cluster size
+    if (cluster.size() != CLUSTER_SIZE) {
+        throw invalid_argument("Cluster size must be exactly 1024 bytes.");
+    }
 
+    // Move the write pointer to the specified cluster position
+    Disk.seekp(clusterIndex * CLUSTER_SIZE, ios::beg);
 
+    // Write the cluster data to the disk
+    Disk.write(cluster.data(), CLUSTER_SIZE);
 
-void Virtual_Disk::writeCluster(const vector<char>& cluster, int clusterIndex)
-{
-    // Move the write pointer to the position of the specified cluster index
-    Disk.seekp(clusterIndex * 1024, ios::beg);
-   
+    // Check if the write operation failed
+    if (!Disk) {
+        throw runtime_error("Failed to write cluster to the virtual disk.");
+    }
 
-
-    // Write the 1024 bytes of data from the vector to the disk at the current position
-    Disk.write(cluster.data(), 1024);
-
-    // If the write operation fails, display an error
-   
-
-    // Flush the stream to ensure data is written to the disk
+    // Flush the stream to ensure data is written to disk
     Disk.flush();
-    
 }
 
-vector<char> Virtual_Disk::readCluster(int clusterIndex)
-{
-    /*
-    Moves the file read pointer to the beginning of the specified cluster.
-    The cluster is 1024 bytes, and we move the pointer by multiplying the
-    cluster index by 1024 (the size of one cluster).
-    */
-    Disk.seekg(clusterIndex * 1024, ios::beg);
-    
+// Read a cluster of data from the virtual disk
+vector<char> Virtual_Disk::readCluster(int clusterIndex) {
+    // Move the read pointer to the specified cluster position
+    Disk.seekg(clusterIndex * CLUSTER_SIZE, ios::beg);
 
-    // Create a vector to hold the 1024 bytes of data we will read from the disk
-    vector<char> bytes(1024);
+    // Create a vector to hold the cluster data
+    vector<char> cluster(CLUSTER_SIZE);
 
-    /*
-    Reads the 1024 bytes of data starting from the current position of the read pointer
-    and fills the 'bytes' vector with the data.
-    */
-    Disk.read(bytes.data(), 1024);
+    // Read the cluster data from the disk
+    Disk.read(cluster.data(), CLUSTER_SIZE);
 
-    // Check if the read operation was successful
-    
-    // Return the vector containing the data read from the cluster
-    return bytes;
+    // Check if the read operation failed
+    if (!Disk) {
+        throw runtime_error("Failed to read cluster from the virtual disk.");
+    }
+
+    return cluster;
 }
 
-bool Virtual_Disk::isNew()
-{
-    // Move the file pointer to the end of the file to determine its size
+// Check if the virtual disk is new (empty)
+bool Virtual_Disk::isNew() {
+    // Move the file pointer to the end of the file
     Disk.seekg(0, ios::end);
 
-    // Get the current position of the read pointer, which represents the size of the file
-    int size = static_cast<int>(Disk.tellg());
+    // Get the file size
+    int fileSize = static_cast<int>(Disk.tellg());
 
-    // If the file size is zero, it means the disk is new (empty)
-    return (size == 0);
+    // Return true if the file is empty
+    return (fileSize == 0);
 }
 
-void Virtual_Disk::closeDisk()
-{
+// Close the virtual disk file
+void Virtual_Disk::closeDisk() {
     if (Disk.is_open()) {
         Disk.close();
     }

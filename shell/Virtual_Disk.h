@@ -16,7 +16,7 @@ public:
     static void writeCluster(const vector<char>& cluster, int clusterIndex);
 
     /** Reads a 1024-byte cluster from the virtual disk at the specified index. */
-    static vector<char> readCluster(int clusterIndex);
+    static vector<char>readCluster(int clusterIndex);
 
     /** Checks if the virtual disk file is new (empty). */
     static bool isNew();
